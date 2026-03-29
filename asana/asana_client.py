@@ -1004,7 +1004,7 @@ def cmd_task(client: AsanaClient, args):
     elif num_subtasks > 0:
         print(f"Subtasks: {num_subtasks} (use --subtasks to list)")
 
-    if getattr(args, "markdown", False) and task.get("html_notes"):
+    if getattr(args, "markdown", True) and not getattr(args, "plain", False) and task.get("html_notes"):
         notes = asana_html_to_markdown(task["html_notes"])
     else:
         notes = task.get("notes")
@@ -1088,6 +1088,10 @@ def cmd_create(client: AsanaClient, args):
     notes = args.notes
     html_notes = None
 
+    # --plain disables markdown conversion
+    if args.plain:
+        args.markdown = False
+
     # Support -m "text" as shorthand for -n "text" -m
     if isinstance(args.markdown, str):
         notes = args.markdown
@@ -1122,6 +1126,10 @@ def cmd_create(client: AsanaClient, args):
 
 def cmd_update(client: AsanaClient, args):
     """Update task."""
+    # --plain disables markdown conversion
+    if args.plain:
+        args.markdown = False
+
     # Support -m "text" as shorthand for -n "text" -m
     if isinstance(args.markdown, str):
         args.notes = args.markdown
@@ -1159,6 +1167,10 @@ def cmd_comment(client: AsanaClient, args):
     """Add comment."""
     text = args.text
     html_text = None
+
+    # --plain disables markdown conversion
+    if args.plain:
+        args.markdown = False
 
     if args.markdown:
         html_text = markdown_to_asana_html(text)
@@ -1558,8 +1570,10 @@ Environment:
     # task
     task = subparsers.add_parser("task", help="Get task details")
     task.add_argument("task_gid", help="Task GID")
-    task.add_argument("-m", "--markdown", action="store_true",
-                      help="Display description as markdown (converts from Asana rich text)")
+    task.add_argument("-m", "--markdown", action="store_true", default=True,
+                      help="Display description as markdown (default: on, use --plain to disable)")
+    task.add_argument("--plain", action="store_true", default=False,
+                      help="Display raw description without markdown conversion")
     task.add_argument("--subtasks", action="store_true",
                       help="Include subtask list in output")
     task.set_defaults(func=cmd_task)
@@ -1600,8 +1614,10 @@ Environment:
     create.add_argument("-d", "--due", help="Due date (YYYY-MM-DD)")
     create.add_argument("--start", help="Start date (YYYY-MM-DD, requires --due)")
     create.add_argument("-n", "--notes", help="Description")
-    create.add_argument("-m", "--markdown", nargs="?", const=True, default=False,
-                        help="Convert notes from markdown to rich text. Optionally pass text: -m \"## body\"")
+    create.add_argument("-m", "--markdown", nargs="?", const=True, default=True,
+                        help="Convert notes from markdown to rich text (default: on). Optionally pass text: -m \"## body\"")
+    create.add_argument("--plain", action="store_true", default=False,
+                        help="Send notes as plain text without markdown conversion")
     create.add_argument("--custom-fields", help='JSON object mapping field GIDs to values, e.g. \'{"12345": "value"}\'')
     create.set_defaults(func=cmd_create)
 
@@ -1614,8 +1630,10 @@ Environment:
     update.add_argument("-d", "--due", help="Due date (YYYY-MM-DD)")
     update.add_argument("--start", help="Start date (YYYY-MM-DD, requires due date on task)")
     update.add_argument("-n", "--notes", help="Description/notes")
-    update.add_argument("-m", "--markdown", nargs="?", const=True, default=False,
-                        help="Convert notes from markdown to rich text. Optionally pass text: -m \"## body\"")
+    update.add_argument("-m", "--markdown", nargs="?", const=True, default=True,
+                        help="Convert notes from markdown to rich text (default: on). Optionally pass text: -m \"## body\"")
+    update.add_argument("--plain", action="store_true", default=False,
+                        help="Send notes as plain text without markdown conversion")
     update.add_argument("--custom-fields", help='JSON object mapping field GIDs to values, e.g. \'{"12345": "value"}\'')
 
     update.set_defaults(func=cmd_update)
@@ -1624,8 +1642,10 @@ Environment:
     comment = subparsers.add_parser("comment", help="Add comment")
     comment.add_argument("task_gid", help="Task GID")
     comment.add_argument("text", help="Comment text")
-    comment.add_argument("-m", "--markdown", action="store_true",
-                         help="Interpret text as markdown and convert to rich text")
+    comment.add_argument("-m", "--markdown", action="store_true", default=True,
+                         help="Interpret text as markdown and convert to rich text (default: on)")
+    comment.add_argument("--plain", action="store_true", default=False,
+                         help="Send comment as plain text without markdown conversion")
     comment.set_defaults(func=cmd_comment)
 
     # subtasks

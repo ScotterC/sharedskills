@@ -14,26 +14,24 @@ asana sections <gid> -v           # Show GIDs
 
 `-v` controls whether GIDs are shown. Without it, output is clean names only.
 
-## Critical: Markdown Flag
+## Markdown (Default)
 
-`-m` / `--markdown` enables markdown-to-rich-text conversion. Two usage patterns:
+Markdown-to-rich-text conversion is **on by default**. All text passed via `-n` or `-m` is converted to Asana rich text automatically.
 
 ```bash
-# Pattern 1: -n for body, -m as toggle
-asana create "Task" -n "## Summary\n- Point one" -m
-asana update <gid> -n "**Done:** fixed bug" -m
+# Markdown conversion happens automatically
+asana create "Task" -n "## Summary\n- Point one"
+asana update <gid> -n "**Done:** fixed bug"
+asana comment <gid> "### Update\nFixed the **bug**"
 
-# Pattern 2: -m with text (shorthand for -n "text" -m)
+# -m with text still works as shorthand for -n "text"
 asana create "Task" -m "## Summary\n- Point one"
 asana update <gid> -m "**Done:** fixed bug"
 
-# comment: text is positional, -m is a flag
-asana comment <gid> "### Update\nFixed the **bug**" -m
-asana comment <gid> "plain text without formatting"         # no -m needed
+# Use --plain to disable markdown conversion (send as literal text)
+asana create "Task" -n "Use the * operator" --plain
+asana comment <gid> "raw text, no conversion" --plain
 ```
-
-Always use `-m` when text contains markdown (`**bold**`, `## headings`, `- lists`, `` `code` ``).
-Without `-m`, text is posted as-is (literal asterisks, hashes, etc).
 
 ## Command Reference
 
@@ -46,7 +44,8 @@ asana projects -l 100                   # Limit results
 
 asana task <gid>                        # Full task details (shows subtask count if any)
 asana task <gid> --subtasks             # Include subtask list inline
-asana task <gid> -m                     # Display description as markdown (converts rich text)
+asana task <gid>                        # Description displayed as markdown by default
+asana task <gid> --plain                # Display raw description without markdown conversion
 asana subtasks <gid>                    # List subtasks
 asana stories <gid>                     # Comments and activity
 asana stories <gid> -l 20              # Limit to 20 entries
@@ -96,12 +95,12 @@ asana create "Task name" -p <project_gid>
 asana create "Task name" -p <gid> -a me -d 2026-03-15
 asana create "Task name" -p <gid> --start 2026-03-01 -d 2026-03-15  # Date range
 asana create "Task name" -n "Plain description"
-asana create "Task name" -n "## Rich description\n- bullet" -m
+asana create "Task name" -n "## Rich description\n- bullet"    # markdown by default
 asana create "Task name" -p <gid> --custom-fields '{"<field_gid>": "value"}'
 
 # Update task
 asana update <gid> --name "New name"
-asana update <gid> -n "New description" -m
+asana update <gid> -n "New description"                       # markdown by default
 asana update <gid> -c true              # Mark complete
 asana update <gid> -c false             # Mark incomplete
 asana update <gid> -a me                # Assign to self
@@ -112,7 +111,7 @@ asana update <gid> --start ""           # Clear start date
 
 # Comment
 asana comment <gid> "Comment text"
-asana comment <gid> "**Bold** comment with _formatting_" -m
+asana comment <gid> "**Bold** comment with _formatting_"      # markdown by default
 
 # Organize
 asana move <gid> -s <section_gid>                    # Move to section
@@ -160,7 +159,7 @@ asana search "query" -l 100            # Search up to 100 results
 
 ## Supported Markdown
 
-When using `-m` flag, these are converted to Asana rich text:
+These markdown features are converted to Asana rich text by default:
 
 - `# H1`, `## H2` (H3-H6 rendered as H2)
 - `**bold**`, `*italic*`, `~~strikethrough~~`
@@ -172,8 +171,8 @@ When using `-m` flag, these are converted to Asana rich text:
 
 ## Common Agent Mistakes
 
-1. **Forgetting `-m` on markdown content** → Without it, `**bold**` renders as literal asterisks
-2. **Not using `-v` when GIDs are needed** → Default output omits GIDs for readability. Use `-v` to see them for follow-up commands.
+1. **Not using `-v` when GIDs are needed** → Default output omits GIDs for readability. Use `-v` to see them for follow-up commands.
+2. **Using `--plain` when markdown is intended** → Only use `--plain` when you explicitly want literal text without rich formatting.
 
 ## Configuration
 
