@@ -174,7 +174,27 @@ These markdown features are converted to Asana rich text by default:
 1. **Not using `-v` when GIDs are needed** → Default output omits GIDs for readability. Use `-v` to see them for follow-up commands.
 2. **Using `--plain` when markdown is intended** → Only use `--plain` when you explicitly want literal text without rich formatting.
 
-## Configuration
+## Project Configuration
+
+Per-project Asana defaults live in `.asana-config.md` in the project root. When this file exists, use its GIDs and conventions as defaults for all Asana operations in that project.
+
+Example `.asana-config.md`:
+```markdown
+# Asana Project Config
+
+## Defaults
+- **Workspace**: My Workspace (GID: `1234567890`)
+- **Default Project**: GID: `9876543210`
+- **Bugs Project**: GID: `1111111111`
+
+## Conventions
+- Bug tasks go in the Bugs project
+- Use S/M/L/XL sizing in custom fields
+```
+
+If no `.asana-config.md` exists, rely on env vars and ask for GIDs as needed.
+
+## Environment
 
 ```bash
 # Required: Personal access token
