@@ -176,23 +176,32 @@ These markdown features are converted to Asana rich text by default:
 
 ## Project Configuration
 
-Per-project Asana defaults live in `.asana-config.md` in the project root. When this file exists, use its GIDs and conventions as defaults for all Asana operations in that project.
+Per-project Asana defaults live in `.asana-config.json` in the project root. When this file exists, use its GIDs as defaults for all Asana operations in that project. The `context` field explains when/how to use each resource.
 
-Example `.asana-config.md`:
-```markdown
-# Asana Project Config
-
-## Defaults
-- **Workspace**: My Workspace (GID: `1234567890`)
-- **Default Project**: GID: `9876543210`
-- **Bugs Project**: GID: `1111111111`
-
-## Conventions
-- Bug tasks go in the Bugs project
-- Use S/M/L/XL sizing in custom fields
+Structure:
+```json
+{
+  "workspace": { "gid": "...", "name": "..." },
+  "projects": {
+    "key": {
+      "gid": "...", "name": "...", "context": "when to use this project",
+      "sections": {
+        "key": { "gid": "...", "name": "..." }
+      }
+    }
+  },
+  "custom_fields": {
+    "key": {
+      "gid": "...", "name": "...",
+      "values": { "key": { "gid": "...", "name": "..." } }
+    }
+  },
+  "users": { "key": { "gid": "...", "name": "..." } },
+  "goals": { "key": { "gid": "...", "name": "..." } }
+}
 ```
 
-If no `.asana-config.md` exists, rely on env vars and ask for GIDs as needed.
+If no `.asana-config.json` exists, rely on env vars and ask for GIDs as needed.
 
 ## Environment
 
