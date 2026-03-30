@@ -176,18 +176,17 @@ These markdown features are converted to Asana rich text by default:
 
 ## Project Configuration
 
-Per-project Asana defaults live in `.asana-config.json` in the project root. When this file exists, use its GIDs as defaults for all Asana operations in that project. The `context` field explains when/how to use each resource.
+Check for `.asana-config.json` in the project root at the start of any Asana operation. This is a **GID registry** — stable identifiers for the workspace's projects, sections, custom fields, users, and goals. Use its GIDs as defaults instead of asking the user. The `context` field explains when/how to use each resource.
 
-Structure:
+This file is **not** for workflows, conventions, or agent logic — those belong in skills and agent definitions.
+
 ```json
 {
   "workspace": { "gid": "...", "name": "..." },
   "projects": {
     "key": {
       "gid": "...", "name": "...", "context": "when to use this project",
-      "sections": {
-        "key": { "gid": "...", "name": "..." }
-      }
+      "sections": { "key": { "gid": "...", "name": "..." } }
     }
   },
   "custom_fields": {
