@@ -572,6 +572,42 @@ def remove_goal_followers(goal_gid: str, follower_gids: List[str]) -> bool:
 
 
 @with_api_error_handling("fetching parent goals for goal {goal_gid}")
+def get_subgoals(
+    goal_gid: str,
+    opt_fields: Optional[List[str]] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Get sub-goals of a goal.
+
+    Args:
+        goal_gid: Goal GID
+        opt_fields: Optional list of fields to include
+
+    Returns:
+        List of sub-goal dictionaries
+    """
+    if not goal_gid or not isinstance(goal_gid, str):
+        raise ValueError(f"Invalid goal_gid: {goal_gid}")
+
+    if not ASANA_SDK_AVAILABLE:
+        raise AsanaClientError(
+            "Asana SDK not available. Install with: pip install asana"
+        )
+
+    client = get_client()
+    goals_api = asana.GoalsApi(client)
+
+    opts = {}
+    if opt_fields:
+        opts["opt_fields"] = ",".join(opt_fields)
+
+    result = goals_api.get_subgoals_for_goal(goal_gid, opts)
+
+    goals = list(result) if result else []
+    logger.info(f"Found {len(goals)} sub-goals for {goal_gid}")
+    return goals
+
+
 def get_parent_goals(
     goal_gid: str,
     opt_fields: Optional[List[str]] = None,

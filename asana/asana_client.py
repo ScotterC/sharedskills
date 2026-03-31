@@ -832,6 +832,64 @@ class AsanaClient:
         )
         return result.get("data", {})
 
+    def remove_from_project(self, task_gid: str, project_gid: str) -> Dict[str, Any]:
+        """Remove a task from a project."""
+        result = self._request(
+            "POST",
+            f"tasks/{task_gid}/removeProject",
+            json_data={"data": {"project": project_gid}},
+        )
+        return result.get("data", {})
+
+    # ========== Status Update Operations ==========
+
+    def create_status_update(
+        self,
+        parent_gid: str,
+        title: str,
+        text: str,
+        status_type: str = "on_track",
+    ) -> Dict[str, Any]:
+        """
+        Create a status update for a project or goal.
+
+        Args:
+            parent_gid: Project or goal GID.
+            title: Status update title.
+            text: Status update body (plain text).
+            status_type: on_track, at_risk, off_track, on_hold, complete,
+                         achieved, partial, missed, dropped.
+        """
+        result = self._request(
+            "POST",
+            "status_updates",
+            json_data={"data": {
+                "parent": parent_gid,
+                "title": title,
+                "text": text,
+                "status_type": status_type,
+            }},
+        )
+        return result.get("data", {})
+
+    def delete_status_update(self, status_update_gid: str) -> bool:
+        """Delete a status update."""
+        self._request("DELETE", f"status_updates/{status_update_gid}")
+        return True
+
+    def get_status_updates(self, parent_gid: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """List status updates for a project or goal."""
+        result = self._request(
+            "GET",
+            "status_updates",
+            params={
+                "parent": parent_gid,
+                "opt_fields": "title,text,status_type,created_at,created_by.name",
+                "limit": str(limit),
+            },
+        )
+        return result.get("data", [])
+
     # ========== Section Operations (CRUD) ==========
 
     def create_section(self, project_gid: str, name: str, insert_before: str = None, insert_after: str = None) -> Dict[str, Any]:
@@ -1390,6 +1448,68 @@ def _get_workspace_gid():
     return workspaces[0]["gid"]
 
 
+def cmd_remove(client: AsanaClient, args):
+    """Remove an association from a task."""
+    if args.project:
+        client.remove_from_project(args.task_gid, args.project)
+        if args.json:
+            print(json.dumps({"removed": "project", "task": args.task_gid, "project": args.project}, indent=2))
+            return
+        print(f"Removed task {args.task_gid} from project {args.project}")
+    elif args.tag:
+        client.remove_tag_from_task(args.task_gid, args.tag)
+        if args.json:
+            print(json.dumps({"removed": "tag", "task": args.task_gid, "tag": args.tag}, indent=2))
+            return
+        print(f"Removed tag {args.tag} from task {args.task_gid}")
+    else:
+        print("Specify --project or --tag to remove", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_status_update(client: AsanaClient, args):
+    """Create or list status updates."""
+    if args.status_action == "create":
+        result = client.create_status_update(
+            parent_gid=args.parent_gid,
+            title=args.title,
+            text=args.text,
+            status_type=args.status or "on_track",
+        )
+        gid = result.get("gid", "")
+        if args.json:
+            print(json.dumps(result, indent=2))
+            return
+        print(f"Created status update: {args.title}")
+        print(f"GID: {gid}")
+
+    elif args.status_action == "list":
+        updates = client.get_status_updates(args.parent_gid, limit=args.limit)
+        if args.json:
+            print(json.dumps(updates, indent=2))
+            return
+        if not updates:
+            print("No status updates found.")
+            return
+        for u in updates:
+            created = u.get("created_at", "")[:10]
+            creator = u.get("created_by", {}).get("name", "")
+            print(f"  [{u.get('status_type', '')}] {u.get('title', '')} — {creator} ({created})")
+            if args.verbose:
+                print(f"    GID: {u.get('gid', '')}")
+            text = u.get("text", "")
+            if text:
+                preview = text[:120].replace("\n", " ")
+                print(f"    {preview}")
+
+    elif args.status_action == "delete":
+        client.delete_status_update(args.status_gid)
+        if args.json:
+            print(json.dumps({"deleted": args.status_gid}, indent=2))
+            return
+        print(f"Deleted status update {args.status_gid}")
+
+
 def cmd_goals(client: AsanaClient, args):
     """List goals in workspace."""
     from asana_sdk import get_goals
@@ -1421,7 +1541,7 @@ def cmd_goals(client: AsanaClient, args):
 
 def cmd_goal(client: AsanaClient, args):
     """Get goal details."""
-    from asana_sdk import get_goal
+    from asana_sdk import get_goal, get_subgoals
 
     goal = get_goal(
         args.goal_gid,
@@ -1430,7 +1550,11 @@ def cmd_goal(client: AsanaClient, args):
     )
 
     if args.json:
-        print(json.dumps(goal, indent=2))
+        data = goal
+        if args.subgoals:
+            subs = get_subgoals(args.goal_gid, opt_fields=["name", "owner", "status", "metric"])
+            data["subgoals"] = subs
+        print(json.dumps(data, indent=2))
         return
 
     print(f"Goal: {goal.get('name')}")
@@ -1454,6 +1578,26 @@ def cmd_goal(client: AsanaClient, args):
     notes = goal.get("notes")
     if notes:
         print(f"\nDescription:\n{notes}")
+
+    if args.subgoals:
+        subs = get_subgoals(args.goal_gid, opt_fields=["name", "owner", "status", "metric"])
+        if subs:
+            print(f"\nSub-goals ({len(subs)}):")
+            for sg in subs:
+                name = sg.get("name", "Untitled")
+                status = sg.get("status", "")
+                sg_owner = sg.get("owner", {})
+                owner_name = sg_owner.get("name", "") if sg_owner else ""
+                metric_str = ""
+                sg_metric = sg.get("metric")
+                if sg_metric:
+                    cur = sg_metric.get("current_number_value", 0)
+                    tgt = sg_metric.get("target_number_value", 0)
+                    metric_str = f" ({cur}/{tgt})"
+                gid_str = f" [{sg.get('gid', '')}]" if args.verbose else ""
+                print(f"  - {name} [{status}]{metric_str} — {owner_name}{gid_str}")
+        else:
+            print("\nNo sub-goals.")
 
 
 def cmd_create_goal(client: AsanaClient, args):
@@ -1717,6 +1861,37 @@ Environment:
                            help="Task GIDs in order (each depends on previous)")
     dep_chain.set_defaults(func=cmd_dep, dep_action="chain")
 
+    # remove
+    remove = subparsers.add_parser("remove", help="Remove association from task")
+    remove.add_argument("task_gid", help="Task GID")
+    remove.add_argument("-p", "--project", help="Project GID to remove from")
+    remove.add_argument("-t", "--tag", help="Tag GID to remove")
+    remove.set_defaults(func=cmd_remove)
+
+    # status-update
+    su = subparsers.add_parser("status-update", help="Manage status updates")
+    su_sub = su.add_subparsers(dest="status_action")
+
+    # status-update create <parent_gid> "title" --text "body" --status on_track
+    su_create = su_sub.add_parser("create", help="Create status update")
+    su_create.add_argument("parent_gid", help="Project or goal GID")
+    su_create.add_argument("title", help="Status update title")
+    su_create.add_argument("--text", required=True, help="Status update body")
+    su_create.add_argument("--status", help="Status type (on_track, at_risk, off_track, on_hold, complete, achieved, partial, missed, dropped)",
+                           default="on_track")
+    su_create.set_defaults(func=cmd_status_update, status_action="create")
+
+    # status-update list <parent_gid>
+    su_list = su_sub.add_parser("list", help="List status updates")
+    su_list.add_argument("parent_gid", help="Project or goal GID")
+    su_list.add_argument("-l", "--limit", type=int, default=5)
+    su_list.set_defaults(func=cmd_status_update, status_action="list")
+
+    # status-update delete <status_update_gid>
+    su_delete = su_sub.add_parser("delete", help="Delete status update")
+    su_delete.add_argument("status_gid", help="Status update GID")
+    su_delete.set_defaults(func=cmd_status_update, status_action="delete")
+
     # markdown (preview converter - no client needed)
     markdown = subparsers.add_parser("markdown", help="Preview markdown to Asana HTML conversion")
     markdown.add_argument("text", nargs="?", help="Markdown text (or pipe via stdin)")
@@ -1733,6 +1908,7 @@ Environment:
     # goal
     goal = subparsers.add_parser("goal", help="Get goal details")
     goal.add_argument("goal_gid", help="Goal GID")
+    goal.add_argument("--subgoals", action="store_true", help="Include sub-goals")
     goal.set_defaults(func=cmd_goal, no_client=True)
 
     # create-goal

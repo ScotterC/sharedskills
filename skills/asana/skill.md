@@ -116,21 +116,40 @@ asana comment <gid> "**Bold** comment with _formatting_"      # markdown by defa
 # Organize
 asana move <gid> -s <section_gid>                    # Move to section
 asana move <gid> -s <section_gid> --after <task_gid>  # Position after task
+asana move <gid> -s <section_gid> --before <task_gid> # Position before task
 asana set-parent <gid> -p <parent_gid>               # Make subtask
 asana set-parent <gid> -p none                        # Remove parent
+
+# Remove associations
+asana remove <gid> -p <project_gid>    # Remove task from project
+asana remove <gid> -t <tag_gid>        # Remove tag from task
 ```
 
-### Goals (uses asana_sdk)
+### Goals
 
 ```bash
 asana goals                             # All goals in workspace
 asana goals -t <team_gid>              # Filter by team
 asana goals -p <time_period_gid>       # Filter by time period
 asana goal <gid>                        # Goal details
+asana goal <gid> --subgoals             # Include sub-goals
 asana create-goal "Goal name" --owner <user_gid> --notes "Description"
 asana update-goal <gid> --status green --notes "On track"
 asana goal-metric <gid> 75             # Update metric progress
 ```
+
+### Status Updates
+
+```bash
+asana status-update create <parent_gid> "Title" --text "Body" --status on_track
+asana status-update list <parent_gid>                # Recent status updates
+asana status-update list <parent_gid> -l 10          # More results
+asana status-update delete <status_update_gid>       # Delete a status update
+```
+
+Status types: `on_track`, `at_risk`, `off_track`, `on_hold`, `complete`, `achieved`, `partial`, `missed`, `dropped`.
+
+**Note:** Setting a goal's status via `update-goal --status` auto-creates an empty status update. Delete it with `status-update delete`, then create one with content.
 
 ## Output Options
 
