@@ -1,0 +1,20 @@
+{
+  "workspace": {
+    "gid": "your_workspace_gid",
+    "name": "Your Workspace"
+  },
+  "projects": {
+    "main": {
+      "gid": "your_project_gid",
+      "name": "Main Project",
+      "context": "Primary project for day-to-day tasks",
+      "sections": {
+        "inbox": { "gid": "section_gid", "name": "Inbox" },
+        "in_progress": { "gid": "section_gid", "name": "In Progress" }
+      }
+    }
+  },
+  "custom_fields": {},
+  "users": {},
+  "goals": {}
+}

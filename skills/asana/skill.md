@@ -174,7 +174,35 @@ These markdown features are converted to Asana rich text by default:
 1. **Not using `-v` when GIDs are needed** → Default output omits GIDs for readability. Use `-v` to see them for follow-up commands.
 2. **Using `--plain` when markdown is intended** → Only use `--plain` when you explicitly want literal text without rich formatting.
 
-## Configuration
+## Project Configuration
+
+Check for `.asana-config.json` in the project root at the start of any Asana operation. This is a **GID registry** — stable identifiers for the workspace's projects, sections, custom fields, users, and goals. Use its GIDs as defaults instead of asking the user. The `context` field explains when/how to use each resource.
+
+This file is **not** for workflows, conventions, or agent logic — those belong in skills and agent definitions.
+
+```json
+{
+  "workspace": { "gid": "...", "name": "..." },
+  "projects": {
+    "key": {
+      "gid": "...", "name": "...", "context": "when to use this project",
+      "sections": { "key": { "gid": "...", "name": "..." } }
+    }
+  },
+  "custom_fields": {
+    "key": {
+      "gid": "...", "name": "...",
+      "values": { "key": { "gid": "...", "name": "..." } }
+    }
+  },
+  "users": { "key": { "gid": "...", "name": "..." } },
+  "goals": { "key": { "gid": "...", "name": "..." } }
+}
+```
+
+If no `.asana-config.json` exists, rely on env vars and ask for GIDs as needed.
+
+## Environment
 
 ```bash
 # Required: Personal access token
