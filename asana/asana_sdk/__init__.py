@@ -141,6 +141,7 @@ from .goals import (
     add_goal_followers,
     remove_goal_followers,
     get_parent_goals,
+    get_subgoals,
 )
 
 __all__ = [
@@ -214,6 +215,7 @@ __all__ = [
     "add_goal_followers",
     "remove_goal_followers",
     "get_parent_goals",
+    "get_subgoals",
 ]
 
 __version__ = "1.0.0"
