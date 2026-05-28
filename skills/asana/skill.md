@@ -109,6 +109,13 @@ asana update <gid> -d 2026-03-15        # Set due date
 asana update <gid> --start 2026-03-01 -d 2026-03-15  # Set date range
 asana update <gid> --start ""           # Clear start date
 
+# Recurrence (requires a due date on the task)
+asana create "Weekly review" -d 2026-06-01 \
+  --recurrence-json '{"type":"weekly","data":{"frequency":1}}'
+asana update <gid> \
+  --recurrence-json '{"type":"monthly","data":{"days_of_month":[15],"frequency":1}}'
+asana update <gid> --recurrence-json ""  # Clear recurrence
+
 # Comment
 asana comment <gid> "Comment text"
 asana comment <gid> "**Bold** comment with _formatting_"      # markdown by default
@@ -188,10 +195,27 @@ These markdown features are converted to Asana rich text by default:
 - `> blockquotes`
 - `---` horizontal rules
 
+## Task Recurrence
+
+Asana's API supports task recurrence via a `recurrence` object on tasks but **doesn't document it**. The CLI exposes it as raw JSON passthrough.
+
+```json
+{"type": "weekly",  "data": {"frequency": 1}}
+{"type": "monthly", "data": {"days_of_month": [15], "frequency": 1}}
+{"type": "daily",   "data": {"frequency": 1}}
+{"type": "never",   "data": null}   // clear
+```
+
+Caveats:
+- **Requires a due date** — Asana rejects recurrence without `due_on` or `due_at`. The CLI raises `ValueError` on create if `-d` is missing; on update, the existing due date on the task counts.
+- **Readback is partial** — `asana task <gid>` shows `type` + `frequency`, but Asana's REST response strips other inner fields you sent (e.g. `days_of_month`, `weekday`). The full rule is stored — visible in the Asana web UI — but not echoed back. This is a server quirk, not a CLI bug.
+- **Undocumented field** — Shape may evolve. If something breaks, check the [forum thread](https://forum.asana.com/t/add-recurring-task-support-to-the-asana-api/1130930) for current state.
+
 ## Common Agent Mistakes
 
 1. **Not using `-v` when GIDs are needed** → Default output omits GIDs for readability. Use `-v` to see them for follow-up commands.
 2. **Using `--plain` when markdown is intended** → Only use `--plain` when you explicitly want literal text without rich formatting.
+3. **Setting recurrence without a due date** → Always pair `--recurrence-json` with `-d`/`--due` on create.
 
 ## Project Configuration
 
