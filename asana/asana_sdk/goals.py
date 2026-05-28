@@ -595,15 +595,26 @@ def get_subgoals(
         )
 
     client = get_client()
-    goals_api = asana.GoalsApi(client)
+    relationships_api = asana.GoalRelationshipsApi(client)
 
-    opts = {}
+    # The Python SDK doesn't expose GoalsApi.get_subgoals_for_goal. Use the
+    # documented goal_relationships endpoint instead, filtering on resource_subtype.
+    opts = {"resource_subtype": "subgoal"}
     if opt_fields:
-        opts["opt_fields"] = ",".join(opt_fields)
+        opts["opt_fields"] = ",".join(
+            f"supporting_resource.{f}" for f in opt_fields
+        )
 
-    result = goals_api.get_subgoals_for_goal(goal_gid, opts)
+    result = relationships_api.get_goal_relationships(goal_gid, opts)
 
-    goals = list(result) if result else []
+    goals = []
+    for rel in result or []:
+        if hasattr(rel, "to_dict"):
+            rel = rel.to_dict()
+        supporting = rel.get("supporting_resource") if isinstance(rel, dict) else None
+        if supporting:
+            goals.append(supporting)
+
     logger.info(f"Found {len(goals)} sub-goals for {goal_gid}")
     return goals
 
