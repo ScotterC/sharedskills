@@ -299,9 +299,9 @@ class AsanaClient:
     def get_task(self, task_gid: str) -> Dict[str, Any]:
         """Get task details."""
         params = {
-            "opt_fields": "name,notes,html_notes,start_on,due_on,completed,assignee.name,projects.name,"
+            "opt_fields": "name,notes,html_notes,start_on,due_on,due_at,completed,assignee.name,projects.name,"
                           "custom_fields.name,custom_fields.display_value,tags.name,"
-                          "memberships.section.name,dependencies,dependents,num_subtasks"
+                          "memberships.section.name,dependencies,dependents,num_subtasks,recurrence"
         }
         result = self._request("GET", f"tasks/{task_gid}", params)
         return result.get("data", {})
@@ -390,6 +390,7 @@ class AsanaClient:
         html_notes: Optional[str] = None,
         custom_fields: Optional[Dict[str, Any]] = None,
         workspace: Optional[str] = None,
+        recurrence: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Create a new task.
@@ -432,6 +433,11 @@ class AsanaClient:
             data["html_notes"] = html_notes
         if custom_fields:
             data["custom_fields"] = custom_fields
+        if recurrence is not None:
+            # Asana rejects recurrence without due_on/due_at — surface that early.
+            if not due_on:
+                raise ValueError("recurrence requires due_on (Asana API constraint)")
+            data["recurrence"] = recurrence
         if workspace and not project:
             data["workspace"] = self._get_workspace(workspace)
         elif not project:
@@ -461,6 +467,7 @@ class AsanaClient:
         notes: Optional[str] = None,
         html_notes: Optional[str] = None,
         custom_fields: Optional[Dict[str, Any]] = None,
+        recurrence: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Update a task."""
         data = {}
@@ -481,11 +488,17 @@ class AsanaClient:
             data["html_notes"] = html_notes
         if custom_fields is not None:
             data["custom_fields"] = custom_fields
+        if recurrence is not None:
+            data["recurrence"] = recurrence
 
         if not data:
             raise ValueError("No updates provided")
 
-        result = self._request("PUT", f"tasks/{task_gid}", json_data={"data": data})
+        result = self._request(
+            "PUT", f"tasks/{task_gid}",
+            params={"opt_fields": "name,due_on,due_at,completed,recurrence"},
+            json_data={"data": data},
+        )
         return result.get("data", {})
 
     def delete_task(self, task_gid: str) -> bool:
@@ -1049,6 +1062,15 @@ def cmd_task(client: AsanaClient, args):
     print(f"Due: {task.get('due_on') or 'None'}")
     print(f"Assignee: {(task.get('assignee') or {}).get('name', 'Unassigned')}")
 
+    recurrence = task.get("recurrence") or {}
+    if recurrence.get("type") and recurrence["type"] != "never":
+        rec_data = recurrence.get("data") or {}
+        # Strip server-injected original_due_date for readability; keep on -v.
+        if not args.verbose:
+            rec_data = {k: v for k, v in rec_data.items() if k != "original_due_date"}
+        suffix = f" {rec_data}" if rec_data else ""
+        print(f"Recurrence: {recurrence['type']}{suffix}")
+
     projects = task.get("projects", [])
     if projects:
         print(f"Projects: {', '.join(p['name'] for p in projects)}")
@@ -1163,6 +1185,8 @@ def cmd_create(client: AsanaClient, args):
     if args.custom_fields:
         custom_fields = json.loads(args.custom_fields)
 
+    recurrence = json.loads(args.recurrence_json) if args.recurrence_json else None
+
     task = client.create_task(
         name=args.name,
         project=args.project,
@@ -1172,6 +1196,7 @@ def cmd_create(client: AsanaClient, args):
         notes=notes,
         html_notes=html_notes,
         custom_fields=custom_fields,
+        recurrence=recurrence,
     )
     if args.json:
         print(json.dumps(task, indent=2))
@@ -1211,6 +1236,8 @@ def cmd_update(client: AsanaClient, args):
             updates["notes"] = args.notes
     if args.custom_fields:
         updates["custom_fields"] = json.loads(args.custom_fields)
+    if args.recurrence_json is not None:
+        updates["recurrence"] = json.loads(args.recurrence_json) if args.recurrence_json else {"type": "never", "data": None}
 
     task = client.update_task(args.task_gid, **updates)
     if args.json:
@@ -1765,6 +1792,11 @@ Environment:
     create.add_argument("--plain", action="store_true", default=False,
                         help="Send notes as plain text without markdown conversion")
     create.add_argument("--custom-fields", help='JSON object mapping field GIDs to values, e.g. \'{"12345": "value"}\'')
+    create.add_argument("--recurrence-json", help=(
+        'Recurrence rule as JSON, e.g. \'{"type": "weekly", "data": {"frequency": 1}}\' or '
+        '\'{"type": "monthly", "data": {"days_of_month": [15], "frequency": 1}}\'. '
+        'Requires --due. Undocumented Asana field — shape may evolve.'
+    ))
     create.set_defaults(func=cmd_create)
 
     # update
@@ -1781,6 +1813,11 @@ Environment:
     update.add_argument("--plain", action="store_true", default=False,
                         help="Send notes as plain text without markdown conversion")
     update.add_argument("--custom-fields", help='JSON object mapping field GIDs to values, e.g. \'{"12345": "value"}\'')
+    update.add_argument("--recurrence-json", help=(
+        'Recurrence rule as JSON, e.g. \'{"type": "weekly", "data": {"frequency": 1}}\'. '
+        'Pass an empty string ("") to clear recurrence. '
+        'Undocumented Asana field — shape may evolve.'
+    ))
 
     update.set_defaults(func=cmd_update)
 

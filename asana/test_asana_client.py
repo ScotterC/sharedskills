@@ -457,6 +457,35 @@ class TestTaskOperations:
         with pytest.raises(ValueError, match="start_on requires due_on"):
             client.create_task(name="Bad Task", start_on="2026-03-01")
 
+    def test_create_task_with_recurrence(self, client):
+        """Should include recurrence in the create body."""
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"data": {"gid": "rec_task"}}
+        client._session.request.return_value = mock_response
+
+        recurrence = {"type": "weekly", "data": {"frequency": 1}}
+        client.create_task(
+            name="Recurring",
+            project="proj1",
+            due_on="2026-06-01",
+            recurrence=recurrence,
+        )
+
+        call_args = client._session.request.call_args
+        json_data = call_args.kwargs.get("json") or call_args[1].get("json")
+        assert json_data["data"]["recurrence"] == recurrence
+
+    def test_create_task_recurrence_without_due_raises(self, client):
+        """Should raise ValueError when recurrence provided without due_on."""
+        with pytest.raises(ValueError, match="recurrence requires due_on"):
+            client.create_task(
+                name="Bad",
+                project="proj1",
+                recurrence={"type": "weekly", "data": {"frequency": 1}},
+            )
+
     def test_create_task_with_section(self, client):
         """Should move task to section after creation."""
         # First call creates task, second moves to section
@@ -526,6 +555,49 @@ class TestTaskOperations:
         call_args = client._session.request.call_args
         json_data = call_args.kwargs.get("json") or call_args[1].get("json")
         assert json_data["data"]["start_on"] is None
+
+    def test_update_task_with_recurrence(self, client):
+        """Should include recurrence in PUT body."""
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"data": {"gid": "task1"}}
+        client._session.request.return_value = mock_response
+
+        recurrence = {"type": "monthly", "data": {"days_of_month": [15], "frequency": 1}}
+        client.update_task("task1", recurrence=recurrence)
+
+        call_args = client._session.request.call_args
+        json_data = call_args.kwargs.get("json") or call_args[1].get("json")
+        assert json_data["data"]["recurrence"] == recurrence
+
+    def test_update_task_clear_recurrence(self, client):
+        """Should clear recurrence via {type: never}."""
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"data": {"gid": "task1"}}
+        client._session.request.return_value = mock_response
+
+        client.update_task("task1", recurrence={"type": "never", "data": None})
+
+        call_args = client._session.request.call_args
+        json_data = call_args.kwargs.get("json") or call_args[1].get("json")
+        assert json_data["data"]["recurrence"] == {"type": "never", "data": None}
+
+    def test_get_task_requests_recurrence(self, client):
+        """get_task should request recurrence in opt_fields."""
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"data": {"gid": "task1"}}
+        client._session.request.return_value = mock_response
+
+        client.get_task("task1")
+
+        call_args = client._session.request.call_args
+        params = call_args.kwargs.get("params") or call_args[1].get("params") or {}
+        assert "recurrence" in params.get("opt_fields", "")
 
     def test_update_task_no_changes(self, client):
         """Should raise error if no updates provided."""
