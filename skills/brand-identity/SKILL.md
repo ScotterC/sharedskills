@@ -58,6 +58,23 @@ theming system — or wants their app to "look like it belongs together."
   `background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;`
   Keep the `-webkit-` prefixes.
+- **Pick a display face as a token** (`--font-display`) so the wordmark has a voice — a
+  serif reads classical/crafted, a geometric sans reads modern/technical. Swapping it is
+  then one line. Pair with tight `letter-spacing` (`-0.02em`) for the heading look.
+- **Three reusable modifiers** (compose them; all token-driven, no new images):
+  - **Animated flow** — widen the gradient (`background-size: 250% 100%`, add a 3rd
+    repeated stop) and pan `background-position` in a `@keyframes` loop. Reads as the
+    brand metaphor *moving* (heat shimmer, liquid, light). The motion lives in the
+    gradient, not the text.
+  - **Glow** — `filter: drop-shadow(0 0 18px rgba(var(--brand-primary-rgb), .45))`.
+    `drop-shadow` uses the rendered alpha, so the halo traces the *letterforms*, not a
+    box. (`text-shadow` would sit behind transparent glyphs — use `drop-shadow`.)
+  - **Compact/label** — `text-transform: uppercase` + wide `letter-spacing` (~0.28em)
+    for a small engraved nav/header treatment. Same gradient, dialed down.
+- **Always handle `prefers-reduced-motion`** — freeze the animated variant to a fixed,
+  on-brand `background-position` (its "hottest" frame), don't just leave it spinning.
+- **Keep contrast across themes** — a near-white gradient stop can wash out on light
+  surfaces; deepen that stop in the light/`[data-theme]` override (the same token name).
 
 ### 5. Wire it in
 - Ship the SVG as a static asset (e.g. `public/icon.svg`); import as a URL and render
