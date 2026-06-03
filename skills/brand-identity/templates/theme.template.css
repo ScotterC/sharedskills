@@ -1,0 +1,90 @@
+/* Starter theme — one primary + one accent, expressed as semantic tokens.
+ * Components reference tokens (var(--text-primary)), NEVER literal hex.
+ * Themes are token OVERRIDES of the same names, so components are written once.
+ * Rename --brand-* to your project's prefix (Asphodel uses --asph-*). */
+
+:root {
+  /* Brand — the only two colors you actually choose. */
+  --brand-primary: #ff6b9d;
+  --brand-primary-rgb: 255, 107, 157; /* for rgba() glows/overlays */
+  --brand-accent: #7c3aed;
+
+  /* Surfaces */
+  --bg-primary: #fafafa;
+  --bg-secondary: #ffffff;
+  --bg-hover: rgba(244, 244, 245, 0.7);
+
+  /* Text — named by role, not by color. */
+  --text-primary: #09090b;
+  --text-secondary: #52525b;
+  --text-tertiary: #71717a;
+  --text-link: var(--brand-primary);
+
+  --border-primary: #e4e4e7;
+
+  /* Status */
+  --success: #00c853;
+  --warning: #ffc107;
+  --error: #ff1744;
+  --info: #2979ff;
+
+  /* Motion — a vocabulary, so interactions feel as consistent as the palette. */
+  --transition-fast: 150ms;
+  --transition-normal: 200ms;
+  --transition-slow: 300ms;
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring-soft: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Type */
+  --letter-spacing-heading: -0.025em;
+
+  /* Focus ring (accessibility, first-class) */
+  --focus-ring-width: 3px;
+  --focus-ring-color: var(--brand-primary);
+}
+
+/* Dark theme — override the SAME token names. Components inherit it for free. */
+.dark,
+[data-theme="dark"] {
+  --brand-accent: #a78bfa; /* often brighten the accent for dark surfaces */
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #13131a;
+  --bg-hover: rgba(40, 40, 52, 0.5);
+  --text-primary: #fafafa;
+  --text-secondary: #e4e4e7;
+  --text-tertiary: #d4d4d8;
+  --border-primary: #27272a;
+}
+
+/* High-contrast — target WCAG AAA (7:1). Build it in, don't bolt it on. */
+[data-high-contrast="true"] {
+  --brand-primary: #d1004b;
+  --bg-primary: #ffffff;
+  --bg-secondary: #ffffff;
+  --text-primary: #000000;
+  --border-primary: #404040;
+  --focus-ring-width: 4px;
+  --focus-ring-color: #000000;
+}
+
+/* Wordmark — brand colors as clipped gradient text (no image). Keep -webkit-. */
+.brand-gradient-text {
+  background: linear-gradient(
+    135deg,
+    var(--brand-primary) 0%,
+    var(--brand-accent) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Respect users who don't want motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

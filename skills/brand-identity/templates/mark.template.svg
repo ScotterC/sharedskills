@@ -1,0 +1,28 @@
+<!-- Starter mark — the "one path, many rotations" method.
+     Replace PATH_DATA with your own primitive, then duplicate the <g rotate> lines.
+     SVG has NO z-index: source order = stacking order (later = on top). -->
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Squircle plate. rx ≈ size / 5.3 gives the iOS app-icon feel. -->
+  <rect width="512" height="512" rx="96" fill="#161a2e"/>
+
+  <!-- One parent sets the shared center + a master tilt (θ adds motion; try 35). -->
+  <g transform="translate(256,256) rotate(0)">
+
+    <!-- BACKGROUND elements: drawn first, sit behind. Recolor + rotate copies. -->
+    <g transform="rotate(150)"><path d="M0,-30 C-46,-62 -52,-136 0,-180 C52,-136 46,-62 0,-30Z" fill="#e8e0d0"/></g>
+    <g transform="rotate(210)"><path d="M0,-30 C-46,-62 -52,-136 0,-180 C52,-136 46,-62 0,-30Z" fill="#e8e0d0"/></g>
+
+    <!-- MIDGROUND: same path scaled ~0.9 so it peeks out from behind the focal pair. -->
+    <g transform="rotate(330) scale(0.91)"><path d="M0,-30 C-46,-62 -52,-136 0,-180 C52,-136 46,-62 0,-30Z" fill="#e4eaf2"/></g>
+    <g transform="rotate(30)  scale(0.91)"><path d="M0,-30 C-46,-62 -52,-136 0,-180 C52,-136 46,-62 0,-30Z" fill="#e4eaf2"/></g>
+
+    <!-- FOCAL pair: full size, drawn LAST, BRIGHTEST color = where the eye lands. -->
+    <g transform="rotate(350)"><path d="M0,-30 C-46,-62 -52,-136 0,-180 C52,-136 46,-62 0,-30Z" fill="#5fb5d8"/></g>
+    <g transform="rotate(10)"><path d="M0,-30 C-46,-62 -52,-136 0,-180 C52,-136 46,-62 0,-30Z" fill="#5fb5d8"/></g>
+
+    <!-- Finish with 1–2 STROKES (not fills): a body, stem, or horizon. -->
+    <g transform="rotate(0)"><path d="M0,-10 Q1.2,-32 0,-54" stroke="#c8d8e8" stroke-width="2.5" fill="none" stroke-linecap="round"/></g>
+
+  </g>
+</svg>
