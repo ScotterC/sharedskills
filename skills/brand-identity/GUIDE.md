@@ -153,8 +153,33 @@ The "Asphodel" wordmark is the two brand colors as clipped gradient text — no 
 }
 ```
 
-An animated variant uses a 3-stop gradient at `background-size: 200%` so it can shift
-on hover. The `-webkit-` prefixes are required (Safari/Chromium); keep both.
+The `-webkit-` prefixes are required (Safari/Chromium); keep both.
+
+**Give it a voice with a display token.** Put the face in `--font-display` and reference
+it from the wordmark class. A serif (Palatino/Iowan/Georgia) reads classical and crafted;
+a geometric sans reads modern and technical. Because it's a token, trying the other voice
+is a one-line edit. Pair with tight `letter-spacing` (`-0.02em`) for the heading look.
+
+**Three composable modifiers** turn the base wordmark into a system (see
+`templates/theme.template.css` for the working CSS — `--flow`, `--glow`, `--label`):
+
+- **Animated flow** — widen the gradient (`background-size: 250%`, a 3-stop loop) and pan
+  `background-position` in a `@keyframes` cycle. The brand metaphor *moves* — heat
+  shimmer, liquid metal, flowing light. The motion lives in the gradient, not the text,
+  so the letters stay crisp.
+- **Glow** — `filter: drop-shadow(0 0 18px rgba(var(--brand-primary-rgb), .45))`. Use
+  `drop-shadow`, not `text-shadow`: drop-shadow keys off the rendered alpha, so the halo
+  traces the letterforms; text-shadow would paint a glow *behind* the transparent glyphs.
+- **Compact/label** — uppercase + wide `letter-spacing` (~0.28em) for a small engraved
+  nav/header lockup. Same gradient, dialed down.
+
+Two things that bite if you skip them:
+
+- **Honor `prefers-reduced-motion`** — freeze the animated variant to a fixed, on-brand
+  `background-position` (its most-saturated frame). Don't leave it panning.
+- **Hold contrast across themes** — a near-white gradient stop sings on dark but washes
+  out on light. Deepen that stop in the light / `[data-theme]` override (same token name),
+  exactly like every other themed token.
 
 ### Minimum viable token file
 
