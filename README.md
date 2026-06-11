@@ -1,5 +1,7 @@
 # AI Dev Tools
 
+[![CI](https://github.com/dmoskov/sharedskills/actions/workflows/ci.yml/badge.svg)](https://github.com/dmoskov/sharedskills/actions/workflows/ci.yml)
+
 A collection of tools for AI-assisted development with Claude Code.
 
 ## Tools
