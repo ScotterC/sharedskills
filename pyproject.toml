@@ -1,0 +1,23 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = [
+    "E402",  # module-import-not-at-top-of-file (SDK init pattern)
+    "E501",  # line-too-long (existing code, tighten later)
+    "E722",  # bare-except (existing code, tighten later)
+    "F401",  # unused-import (existing code, tighten later)
+    "F541",  # f-string-missing-placeholders (existing code)
+    "F841",  # unused-variable (existing code, tighten later)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"test_*.py" = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["asana", "letta"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
